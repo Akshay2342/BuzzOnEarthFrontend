@@ -42,3 +42,15 @@
 .custom-checkbox {
   accent-color: #12132e;
 }
+
+.rotate-0 {
+  transform: rotate(0deg);
+}
+
+.rotate-180 {
+  transform: rotate(180deg);
+}
+
+.transition-transform {
+  transition: transform 0.3s ease;
+}

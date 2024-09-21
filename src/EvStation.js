@@ -189,10 +189,19 @@ export default function EvStation({ hoveredStation,setHoveredStation ,defaultCen
   evStations = evStations?.data;
   const [googleMapsLoaded, setGoogleMapsLoaded] = useState(false);
   const [markerIcon, setMarkerIcon] = useState(null);
+  const [snackbarVisible, setSnackbarVisible] = useState(false);
+
   // const defaultCenter = { lat: 51.47, lng: 0.45 };
   const Mark = {
     url: Markk, // Path to your custom marker image
     scaledSize: { width: 56, height: 56 } // Adjust the size as needed
+  };
+  const handleAddToPinnedItems = () => {
+    setPinnedItems([...pinnedItems, hoveredStation]);
+    setSnackbarVisible(true);
+    setTimeout(() => {
+      setSnackbarVisible(false);
+    }, 3000); // Hide snackbar after 3 seconds
   };
   // const evStationPlacements = evStations?.flatMap(createEvStationPlacements).map((placement, index) => ({
   //   ...placement,
@@ -269,21 +278,32 @@ export default function EvStation({ hoveredStation,setHoveredStation ,defaultCen
       mapRef.current.panTo(coord);
     }
   };
-
-
+  useEffect(() => {
+    if( mapRef.current && defaultCenter){
+      mapRef.current.panTo(defaultCenter)
+    }
+    console.log({defaultCenter})
+  }, [defaultCenter]);
   
   const getPopulationDensity = (lat, lng) => {
     const key = `${lat},${lng}`;
     const x = populationMap?.get(key) 
     if(x) setCurrentDensity(x)
-    return x || 'No data';
+    return x.toFixed(2) || 'No data';
+  };
+
+  const isWithinScope = (probability) => {
+    // Check if the station's probability falls within any selected scope
+    return selectedScopes.some(
+      (scope) => probability >= scope.mini && probability <= scope.maxi
+    );
   };
 
   return (
     <APIProvider apiKey="AIzaSyBue3U52K8UDNxJxPJfCv0LiIc60-lo8p4">
         <Map
         defaultCenter={defaultCenter}
-        defaultZoom={19}
+        defaultZoom={8}
         customIcon={customIcon}
         options={{ 
           styles: mapStyles,
@@ -293,7 +313,10 @@ export default function EvStation({ hoveredStation,setHoveredStation ,defaultCen
         }}
         onLoad={(map) => (mapRef.current = map)}
         >
-        {googleMapsLoaded && evStationPlacements?.map((station, index) => {
+        {googleMapsLoaded && evStationPlacements?.filter((station) => {
+              const probability = parseFloat(station.prob?.probability) || 0;
+              return isWithinScope(probability); // Filter stations based on selected scopes
+            }).map((station, index) => {
           const probability = parseFloat(station.prob?.probability) || 0; // Default to 0 if probability is missing
           // const color = probability > 0.5 ? 'green' : 'red'; // Change color based on probability
           const customIcon = createCustomIcon(getScopeColor(probability*100));
@@ -312,17 +335,35 @@ export default function EvStation({ hoveredStation,setHoveredStation ,defaultCen
 
 {hoveredMarker && (
   <InfoWindow
-  position={hoveredMarker}
-  options={{ disableAutoPan: true, closeBoxURL: '' }}
->            
-<div>EV Station Info {hoveredStation?.ind}</div>
-            <div>EV Station Info {hoveredStation?.lat}</div>
-            <div>Population Density: {getPopulationDensity(hoveredStation?.lat, hoveredStation?.lng)}</div>
-            <div>Probability: {hoveredStation?.prob?.probability}</div> {/* Correctly display prob property */}
-            <button onClick={() => setPinnedItems([...pinnedItems, hoveredStation])}>add</button>
-          </InfoWindow>
-        )}
+    position={hoveredMarker}
+    options={{ disableAutoPan: true, closeBoxURL: '' }}
+  >
+    <div className="p-2">
+      <div className="mb-1 font-bold text-sm">EV Station Details</div>
+      <div className="mb-1 text-xs">
+        <span className="font-semibold">ID:</span> {hoveredStation?.ind}
+      </div>
+      <div className="mb-1 text-xs">
+        <span className="font-semibold">Population Density:</span> {getPopulationDensity(hoveredStation?.lat, hoveredStation?.lng)}
+      </div>
+      <div className="mb-1 text-xs">
+        <span className="font-semibold">Probability:</span> {hoveredStation?.prob?.probability ? (hoveredStation.prob.probability * 100).toFixed(2) + '%' : 'N/A'}
+      </div>
+      <button
+        onClick={handleAddToPinnedItems}
+        className="px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-xs"
+      >
+        Add
+      </button>
+    </div>
+  </InfoWindow>
+)}
 
+{snackbarVisible && (
+  <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-green-500 text-white px-4 py-2 rounded shadow-lg">
+    Successfully added to pinned items!
+  </div>
+)}
       </Map>
     </APIProvider>
   );

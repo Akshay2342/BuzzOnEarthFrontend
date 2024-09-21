@@ -1,4 +1,4 @@
-import React, { useEffect,useState } from 'react';
+import React, { useEffect,useState, useRef } from 'react';
 import EvStation from './EvStation';  // Component for EV Station Map
 import HeatMapComponent from './HeatMapComponent';  // Component for Heatmap
 import { 
@@ -10,6 +10,10 @@ import {
 } from './fetchPop'; // Adjust the import as needed
 import QuestionIcon from './question.png'; // Component for Question Icon
 import ListItem from './ListItem';
+import html2canvas from 'html2canvas';
+import { jsPDF } from 'jspdf';
+import Avatar from './avatarsvg.svg';
+
 
 const locations = [
   { position: [0.45, 51.47] },
@@ -47,8 +51,11 @@ const App = () => {
   const [hoveredStation, setHoveredStation] = useState(null); 
   const [filterText, setFilterText] = useState('');
   const [pinnedItems, setPinnedItems] = useState([]);
-  const [selectedScopes, setSelectedScopes] = useState([]);
-  // const [evStationPlacements , setEvStationPlacements] = useState();
+  const [selectedScopes, setSelectedScopes] = useState([
+    {label: '> 80%', mini: 0.8, maxi: 1},
+    {label: '60% - 80%', mini: 0.6, maxi: 0.8},
+    {label: '40% - 60%', mini: 0.4, maxi: 0.6},
+    {label: '< 40%', mini: 0, maxi: 0.4}]);  // const [evStationPlacements , setEvStationPlacements] = useState();
   const [population, setPopulation] = useState(null);
   const [hoveredProbability, setHoveredProbability] = useState(null); // Add state for hovered probability
   const [comparisonResult, setComparisonResult] = useState(null); // State for comparison result
@@ -66,6 +73,70 @@ const App = () => {
   const [isInputFocused1, setIsInputFocused1] = useState(false);
   const [isInputFocused2, setIsInputFocused2] = useState(false);
   // const [cityData, setCityData] = useState({}); // State to store data from all endpoints
+  const [workMap, setWorkMap] = useState({});
+  const [isDropdownVisible, setIsDropdownVisible] = useState(false);
+  const [exportFormat, setExportFormat] = useState('pdf');
+  const [exportName, setExportName] = useState('');
+  const [defaultCenter, setDefaultCenter] = useState([50.1109, 8.6821]);
+  const [isAvatarDropdownOpen, setIsAvatarDropdownOpen] = useState(false);
+
+  const toggleAvatarDropdown = () => {
+    setIsAvatarDropdownOpen(!isAvatarDropdownOpen);
+  };
+
+
+  const downloadAsImage = () => {
+    const element = document.body;
+    html2canvas(element).then(canvas => {
+      const imgData = canvas.toDataURL('image/png');
+      const link = document.createElement('a');
+      link.href = imgData;
+      link.download = `${exportName}.png`;
+      link.click();
+    });
+  };
+const downloadAsPDF = () => {
+  const element = document.body;
+  html2canvas(element).then(canvas => {
+    const imgData = canvas.toDataURL('image/png');
+    const pdf = new jsPDF({
+      orientation: 'landscape',
+      unit: 'px',
+      format: [canvas.width, canvas.height]
+    });
+    pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
+    pdf.save(`${exportName}.pdf`);
+  });
+};
+
+  const handleDownload = () => {
+    // console.log({exportFormat})
+    if (exportFormat === 'pdf') {
+      downloadAsPDF();
+    } else if (exportFormat === 'jpg') {
+      downloadAsImage();
+    }
+  };
+  const handleExportNameChange = (event) => {
+    setExportName(event.target.value);
+  };
+
+
+  const handleMouseEnter1 = () => {
+    setIsDropdownVisible(!isDropdownVisible);
+  };
+
+  const handleMouseLeave1 = () => {
+    setIsDropdownVisible(false);
+  };
+
+  // const handleCopy = () => {
+  //   navigator.clipboard.writeText('Pinned Items');
+  //   setIsCopied(true);
+  //   setTimeout(() => {
+  //     setIsCopied(false);
+  //   }, 2000); // Reset copied state after 2 seconds
+  // };
 
 
   useEffect(() => {
@@ -90,6 +161,7 @@ const App = () => {
   'population',
   'residential',
 ];
+
 
 
 const [selectedCity, setSelectedCity] = useState('');
@@ -118,6 +190,9 @@ function parseAndStoreInMap(data, endpoint) {
     globalMap[key][endpoint] = endpointNumber;
   });
 }
+useEffect(()=>{
+  setSelectedCity('Berlin')
+},[])
 
 const createEvStationPlacements = (data, inn) => {
   if (!data || !data.geometry) {
@@ -161,6 +236,13 @@ const createEvStationPlacements = (data, inn) => {
   return placements;
 };
 
+const handleExportFormatChange = (event) => {
+  console.log(event.target.value);
+  setExportFormat(event.target.value);
+};
+
+
+
 
 const evStationPlacements = evStations?.data?.flatMap((data, inn) => 
   createEvStationPlacements(data, inn, probability)
@@ -185,6 +267,9 @@ const filteredCities = cities.filter(city =>
   city.toLowerCase().includes(filterText.toLowerCase())
 );
 
+
+
+
 const fetchData = async (city) => {
   for (const endpoint of endpoints) {
     try {
@@ -198,6 +283,7 @@ const fetchData = async (city) => {
       result.forEach(item => {
         parseAndStoreInMap(item, endpoint);
       });
+      setWorkMap(globalMap);
     } catch (error) {
       console.error(error);
     }
@@ -209,8 +295,9 @@ const fetchData = async (city) => {
 
     const testEndpoints = async () => {
       const x = await fetchData(selectedCity);
-      console.log({globalMap})
-      
+      // console.log({globalMap})
+    //  if(globalMap.length >1) setWorkMap(globalMap);
+        
       // Testing population endpoint
       const populationResult = await fetchPopulation(selectedCity);
       setPopulation(populationResult);
@@ -232,17 +319,16 @@ const fetchData = async (city) => {
       setProbability(probabilityResult); // Assuming you have a state variable for this
       console.log({ probabilityResult });
     };
-
+    setDefaultCenter(cityData.get(selectedCity));
     testEndpoints();
   }, [selectedCity]);
 
   const scopeOptions = [
-    { label: '> 80%', color: 'bg-green-500' },
-    { label: '60% - 80%', color: 'bg-yellow-500' },
-    { label: '40% - 60%', color: 'bg-orange-500' },
-    { label: '< 40%', color: 'bg-red-500' },
-  ];
-
+    { label: '> 80%', color: 'bg-green-500', maxi: 1, mini: 0.8 },
+    { label: '60% - 80%', color: 'bg-yellow-500', maxi: 0.8, mini: 0.6 },
+    { label: '40% - 60%', color: 'bg-orange-500', maxi: 0.6, mini: 0.4 },
+    { label: '< 40%', color: 'bg-red-500', maxi: 0.4,mini:0},
+];
   const getPopulationDensity = (lat, lng) => {
     const key = `${lat},${lng}`;
     const x = populationMap?.get(key) 
@@ -257,15 +343,19 @@ const fetchData = async (city) => {
     setIsInputFocused(true);
   };
 
-  const handleCheckboxChange = (label) => {
+  const handleCheckboxChange = (label, maxi, mini) => {
     setSelectedScopes((prevSelectedScopes) => {
-      if (prevSelectedScopes.includes(label)) {
-        return prevSelectedScopes.filter((item) => item !== label);
+      const exists = prevSelectedScopes.some(item => item.label === label);
+
+      if (exists) {
+        // If the label already exists, remove the corresponding object
+        return prevSelectedScopes.filter((item) => item.label !== label);
       } else {
-        return [...prevSelectedScopes, label];
-      }
-    });
-  };
+        // Add the new object with label, mini, and maxi
+        return [...prevSelectedScopes, { label, mini, maxi }];
+    }
+});
+};
   useEffect(()=>{
     compareStations(compareSearchText1,compareSearchText2);
   },[compareSearchText1,compareSearchText2])
@@ -291,7 +381,7 @@ const fetchData = async (city) => {
     if(population == null || population.length===0) return;
     const extractLatLngPopulation = (population) => {
       const populationMap = new Map();
-      console.log({population})
+      // console.log({population})
       population?.forEach((data) => {
         const coordinatesString = data.geometry.match(/\(\((.*)\)\)/)[1];
         const coordinatesArray = coordinatesString.split(', ').map(coord => {
@@ -414,12 +504,16 @@ const handleStationClick2 = (station) => {
 };
 const calculateResult = (lat, lng) => {
   const key = `${lat},${lng}`;
-  const data = globalMap[key];
- console.log({key})
+  const data = workMap[key];
+//  console.log({key})
   if (!data) {
+    console.log({key})
+    console.log({globalMap})
+    console.log({workMap})
     console.log("No data found for the specified coordinates.");
     return null; // No data for the given lat/lng
   }
+
 
   const parkingValue = data['parking'] || 0; // Default to 0 if not found
   const parkValue = data['park'] || 0;       // Default to 0 if not found
@@ -435,9 +529,14 @@ const calculateResult = (lat, lng) => {
 
   // Calculate the result
   const result = (parkingValue * parkValue) + remainingSum;
-
+  console.log({result})
   return result;
 };
+
+const highestProbability = probability.length > 0
+? Math.max(...probability.map(p => p.probability))
+: null;
+
 useEffect(() => {
  console.log({selectedScopes})
 }, [selectedScopes]);
@@ -482,7 +581,7 @@ useEffect(() => {
           ))}
         </select> */}
       </div>
-    <nav style={{ backgroundColor: '#191b61' }} className="text-white p-4">        <div className="container mx-auto flex justify-between items-center">
+    {/* <nav style={{ backgroundColor: '#191b61' }} className="text-white p-4">        <div className="container mx-auto flex justify-between items-center">
           <div className="text-lg font-bold">EV Station App</div>
           <div className="space-x-4">
 
@@ -492,12 +591,39 @@ useEffect(() => {
             <a href="#" className="hover:underline">Contact</a>
           </div>
         </div>
-      </nav> 
+      </nav>  */}
+      
 
-      <div className="flex flex-1">
+      <nav style={{ backgroundColor: '#191b61' }} className="text-white p-4 h-[59px]" >
+      <div className="container mx-auto flex justify-between items-center">
+        <div className="text-lg font-bold">EV Station App</div>
+        <div className="relative">
+          <button onClick={toggleAvatarDropdown} className="focus:outline-none">
+            <img
+             src={Avatar} // Replace with the actual path to the avatar image
+             alt="Avatar"
+             className="w-8 h-8 rounded-full"
+           />
+           </button>
+ {isAvatarDropdownOpen && (
+            <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10">
+              <a
+                href="#"
+                className="block px-4 py-2 text-gray-800 hover:bg-gray-200"
+              >
+                Guest Account
+              </a>
+            </div>
+          )}
+                  </div>
+      </div>
+    </nav>
 
-      <div style={{ backgroundColor: '#151640' }} className="text-white p-4 w-1/5">
-          <h2 className="text-lg font-bold mb-4">Filters</h2>
+      <div className="flex flex-1 overflow-y-auto">
+
+      <div style={{ backgroundColor: '#151640' }} className="text-white p-4 w-1/5 overflow-y-auto">          <h2 className="text-lg font-bold mb-4">Filters</h2>
+          <hr className="my-4 border-t border-gray-700" />
+
           {/* <div className="space-y-2">
             <label className="flex items-center">
               <input type="checkbox" className="mr-2" />
@@ -515,22 +641,27 @@ useEffect(() => {
             <div className="mt-4">
     <label className="block mb-2">Map</label>
     <select className="w-full p-2 bg-blue-900 text-white rounded">
-      <option value="map1">Map 1</option>
-      <option value="map2">Map 2</option>
-      <option value="map3">Map 3</option>
-    </select>
+      <option value="map1">Ev Stations</option>
+      {/* <option value="map2">Map 2</option> */}
+      <option value="map3" disabled>Population Density</option>    </select>
   </div>
   <div className="mt-4">
-  {scopeOptions.map((item,index) => (
-        <div className="space-y-2">
-          <label key={index} className="flex items-center space-x-10">
-            <input type="checkbox" className="mr-2 custom-checkbox"   checked={selectedScopes.includes(item.label)}
-              onChange={() => handleCheckboxChange(item.label)} />
-            {item.label}
-            <span className={`ml-2 inline-block w-3 h-3 ${item.color} rounded-full`}></span>
-          </label>
+  {scopeOptions.map((item, index) => (
+  <div key={index} className="space-y-2">
+    <label className="flex items-center justify-between space-x-4">
+    <div className="flex items-center space-x-2">
+        <input
+          type="checkbox"
+          className="mr-2 custom-checkbox"
+          checked={selectedScopes.some(scope => scope.label === item.label)}
+          onChange={() => handleCheckboxChange(item.label,item.maxi,item.mini)}
+        />
+        <span>{item.label}</span>
       </div>
-    ))}
+      <span className={`inline-block w-3 h-3 ${item.color} rounded-full `}></span>
+    </label>
+  </div>
+))}
 </div>
 
   {/* <div className="mt-4">
@@ -561,7 +692,7 @@ useEffect(() => {
       </label>
     </div> */}
     {/* </div> */}
-    <div className="mt-4 flex items-center space-x-2">
+    <div className="mt-6 flex items-center space-x-2">
       <div className="relative group">
         <img src={QuestionIcon} alt="Info" className="info-icon cursor-pointer w-5 h-5" />
         <div className="absolute top-full mb-2 hidden w-48 p-2 text-sm text-white bg-gray-800 rounded-md shadow-md group-hover:block">
@@ -570,19 +701,72 @@ useEffect(() => {
       </div>
       <span className="text-sm">How scope is calculated</span>
     </div>
+    <hr className="my-4 border-t border-gray-700" />
+
     <h3
-                  className="text-md font-medium mt-2 cursor-pointer"
-                  onClick={toggleAccordion}
-                >
-                  Pinned Items
-                </h3>
+  className="text-md font-medium mt-4 cursor-pointer flex items-center justify-between"
+  onClick={toggleAccordion}
+>
+  Pinned Items
+  <span className={`inline-block transform transition-transform duration-300 ${isAccordionOpen ? 'rotate-180' : 'rotate-0'}`}>
+    ▼
+  </span>
+</h3>
                 {isAccordionOpen && (
                   <ul>
                     { pinnedItems.map((item, index) => (
-      <ListItem key={index} item={item} index={index} />
-    ))}
+                      <ListItem key={index} item={item} index={index} />
+                    ))}
                   </ul>
                 )}
+
+<hr className="my-4 border-t border-gray-700" />
+<div className="p-2 mt-3 rounded-md mb-2">
+
+        <h3 className="text-md font-medium mb-2">Export</h3>
+        <div className="flex space-x-4">
+          <div>
+            <label className="block text-sm font-medium mb-2">Type</label>
+            <select
+              // value={exportType}
+              // onChange={handleExportTypeChange}
+              className="p-2 border rounded-md w-full text-black"
+            >
+               <option value="map">Map</option>
+              <option value="report">Report</option>
+            </select>
+            </div>
+          <div>
+            <label className="block text-sm font-medium mb-2">Format</label>
+            <select
+              value={exportFormat}
+              onChange={handleExportFormatChange}
+              className="p-2 border rounded-md w-full text-black"
+            >
+              <option value="pdf">PDF</option>
+              <option value="jpg">JPG</option>
+            </select>
+          </div>
+          </div>
+        <div className="mt-4">
+          <label className="block text-sm font-medium mb-2">Save as</label>
+          <input
+            type="text"
+            value={exportName}
+            onChange={handleExportNameChange}
+            className="p-2 border rounded-md w-full text-black"
+            placeholder="Enter name"
+          />
+        </div>
+        <div className="mt-4">
+          <button
+            onClick={handleDownload}
+            className="p-2 bg-blue-500 text-white rounded-md w-full"
+          >
+            Download
+          </button>
+        </div>
+      </div>
   </div>
 
         {/* Right Section: Maps */}
@@ -619,32 +803,50 @@ useEffect(() => {
               locations={locations}
               setPinnedItems={setPinnedItems}
               evStations={evStations}
-              defaultCenter={cityData?.get(selectedCity)}
+              defaultCenter={defaultCenter}
               setHoveredProbability={setHoveredProbability} // Pass setHoveredProbability to EvStation
             />}
             </div>
             {/* Separator */}
             <div className="w-0.5 bg-gray-300"></div>
-            <div className="w-2/5 h-full bg-gray-100 p-2">
+            <div className="w-2/5 h-full bg-gray-100 p-2 overflow-y-auto">
               <div className="p-2">
                 <div className="bg-gray-200 p-2 rounded-md mb-2">
                   <h3 className="text-md font-medium">Locality Scope</h3>
-                  <p className="text-4xl font-bold">{hoveredProbability !== null ? `${(hoveredProbability?.probability * 100).toFixed(2)}%` : 'N/A'}</p> {/* Display hovered probability */}
+                  <p className="text-4xl font-bold">{hoveredProbability !== null ? `${(hoveredProbability?.probability * 100).toFixed(2)} %` : `${(highestProbability * 100).toFixed(2)}`}</p> {/* Display hovered probability */}
                   </div>
                 <div className="bg-gray-200 p-2 rounded-md mb-2">
           <h3 className="text-md font-medium">Specifics</h3>
           <div className="mt-2 flex justify-between">
             <p className="text-sm font-medium">Population Density:</p>
-            <p className="text-md font-bold">{currentDensity}</p>
+            <p className="text-md font-bold">{currentDensity.toFixed(2)}</p>
           </div>
           {/* <div className="mt-2 flex justify-between">
             <p className="text-sm font-medium">Traffic:</p>
             <p className="text-lg font-bold">Moderate</p>
           </div> */}
-          <div className="mt-2 flex justify-between">
-            <p className="text-sm font-medium">Places of Interest:</p>
+          <div className="mt-2 flex justify-between"         onClick={handleMouseEnter1}
+        >
+            <p className="text-sm font-medium">Places of Interest
+            <span className={`inline-block ml-[10px] transform transition-transform duration-300 ${isDropdownVisible ? 'rotate-180' : 'rotate-0'}`}>
+    ▼
+  </span>
+
+            </p>
             <p className="text-lg font-bold">{calculateResult(hoveredStation?.lat, hoveredStation?.lng)}</p>
           </div>
+          {isDropdownVisible && (
+            <div className="absolute left-200 mt-2 w-48 bg-white bg-opacity-90 border border-gray-300 rounded-md shadow-lg max-h-40 overflow-y-auto z-50">
+              <ul className="py-1">
+                {endpoints.map((place, index) => (
+                  <li key={index} className="px-4 py-2 hover:bg-gray-100">
+                    {place}
+                  </li>
+                ))}
+            </ul>
+          </div>
+        )}
+
           </div>
 
           <div className="bg-gray-200 p-2 rounded-md mb-2">
@@ -653,8 +855,18 @@ useEffect(() => {
         onClick={toggleAccordion1}
       >
         Compare
+        {/* <span className={`inline-block transform transition-transform duration-300 ${isAccordionOpen1 ? 'rotate-180' : 'rotate-0'}`}>
+  ▼
+</span> */}
+<span className={`inline-block ml-[175px] transform transition-transform duration-300 ${isAccordionOpen1 ? 'rotate-180' : 'rotate-0'}`}>
+  ▼
+</span>
+
+{/* <span className={`transform transition-transform ${isAccordionOpen1 ? 'rotate-180' : 'rotate-0'}`}>
+            ▼
+          </span> */}
       </h3>
-      {isAccordionOpen1 && (
+      {1 && (
         <div className="mt-2">
           <div className="flex items-center justify-between">
             <div className="relative w-full">
@@ -717,8 +929,8 @@ useEffect(() => {
           <div className="mt-4" style={{width : "200px"}}>
             {/* Additional details go here */}
 
-            {comparisonResult && (
-                <div className="mt-2 p-2 bg-gray-200 rounded-md">
+            {isAccordionOpen1 && (
+                <div className="mt-2 p-2 w-[260px] bg-gray-200 rounded-md">
                   <h4 className="text-md font-medium">Comparison Result:</h4>
                   {typeof comparisonResult === 'string' ? (
                     <p>{comparisonResult}</p>
@@ -728,6 +940,7 @@ useEffect(() => {
 <table className="min-w-full bg-white">
 <thead>
                         <tr>
+                          <th className="py-2">   </th>
                           <th className="py-2">{comparisonResult.station1.name}</th>
                           <th className="py-2">{comparisonResult.station2.name}</th>
                         </tr>
@@ -785,21 +998,23 @@ useEffect(() => {
     </tr>
   </thead>
   <tbody>
-    {evStationPlacements?.map((station, index) => (
-      <tr key={index}>
-        <td className="text-sm">{`station ${station.ind}`}</td>
-        <td className="text-sm">
-          {Math.floor(station.prob?.probability * 100)}%
-        </td>
-        <td className="text-sm">
-          <span
-            className="inline-block w-4 h-4 rounded-full"
-            style={{ backgroundColor: getScopeColor(Math.floor(station.prob?.probability * 100)) }}
-          ></span>
-        </td>
-      </tr>
+    {evStationPlacements
+      ?.sort((a, b) => b.prob?.probability - a.prob?.probability) // Sort by probability
+      .map((station, index) => (
+        <tr key={index}>
+          <td className="text-sm">{`station ${station.ind}`}</td>
+          <td className="text-sm">
+            {(station.prob?.probability * 100).toFixed(2)}%
+          </td>
+          <td className="text-sm">
+            <span
+              className="inline-block w-4 h-4 rounded-full"
+              style={{ backgroundColor: getScopeColor((station.prob?.probability * 100).toFixed(2)) }}
+            ></span>
+          </td>
+        </tr>
     ))}
-  </tbody>
+</tbody>
 </table>
             </div>
               </div>
