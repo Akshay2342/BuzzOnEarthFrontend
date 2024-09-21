@@ -55,6 +55,31 @@ const mapStyles = [
   }
 ];
 
+// const createCustomIcon = (color) => {
+//   const svgMarker = {
+//     path: 'M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z',
+//     fillColor: color,
+//     fillOpacity: 1,
+//     scale: 1,
+//     strokeColor: 'white',
+//     strokeWeight: 1,
+//   };
+//   // console.log(object)
+//   return svgMarker;
+// };
+
+
+const createCustomIcon = (color) => {
+  const svgMarker = {
+    path: 'M 0, 0 m -10, 0 a 10,10 0 1,0 20,0 a 10,10 0 1,0 -20,0', // Circle path
+    fillColor: color,
+    fillOpacity: 1,
+    scale: 0.4,
+    strokeColor: 'white',
+    strokeWeight: 1,
+  };
+  return svgMarker;
+};
 
 const coordinates = [
     { lat: 51.47, lng: 0.45 },
@@ -99,99 +124,116 @@ const coordinates = [
 // };
 
 
-const createEvStationPlacements = (data) => {
-  if (!data || !data.geometry) {
-    console.error("Invalid data or missing geometry property");
-    return [];
-  }
+// const createEvStationPlacements = (data) => {
+//   if (!data || !data.geometry) {
+//     console.error("Invalid data or missing geometry property");
+//     return [];
+//   }
 
-  const coordinatesString = data.geometry.slice(10, -2);
-  if (!coordinatesString) {
-    console.error("Invalid geometry format");
-    return [];
-  }
+//   const coordinatesString = data.geometry.slice(10, -2);
+//   if (!coordinatesString) {
+//     console.error("Invalid geometry format");
+//     return [];
+//   }
 
-  const coordsArray = coordinatesString.split(", ");
-  if (!coordsArray.length) {
-    console.error("No coordinates found in geometry");
-    return [];
-  }
+//   const coordsArray = coordinatesString.split(", ");
+//   if (!coordsArray.length) {
+//     console.error("No coordinates found in geometry");
+//     return [];
+//   }
 
-  const evStations = data.EV_stations;
-  const placements = [];
+//   const evStations = data.EV_stations;
+//   const placements = [];
 
-  // Convert coordinates to number
-  const coords = coordsArray.map(coord => coord.split(" ").map(Number));
+//   // Convert coordinates to number
+//   const coords = coordsArray.map(coord => coord.split(" ").map(Number));
 
-  // Calculate the center of the polygon
-  const centerLat = coords.reduce((sum, coord) => sum + coord[1], 0) / coords.length;
-  const centerLng = coords.reduce((sum, coord) => sum + coord[0], 0) / coords.length;
+//   // Calculate the center of the polygon
+//   const centerLat = coords.reduce((sum, coord) => sum + coord[1], 0) / coords.length;
+//   const centerLng = coords.reduce((sum, coord) => sum + coord[0], 0) / coords.length;
 
-  // Generate EV station placements
-  if (evStations === 1) {
-    placements.push({ lat: centerLat, lng: centerLng });
+//   // Generate EV station placements
+//   if (evStations === 1) {
+//     placements.push({ lat: centerLat, lng: centerLng });
+//   } else {
+//     // Distribute EV stations evenly within the polygon
+//     for (let i = 0; i < evStations; i++) {
+//       const lat = coords[i % coords.length][1];
+//       const lng = coords[i % coords.length][0];
+//       placements.push({ lat, lng  });
+//     }
+//   }
+//   // console.log({placements})
+//   return placements;
+// };
+const getScopeColor = (scope) => {
+  if (scope > 80) {
+    return 'green';
+  } else if (scope > 60) {
+    return 'yellow';
+  } else if (scope > 40) {
+    return 'orange';
   } else {
-    // Distribute EV stations evenly within the polygon
-    for (let i = 0; i < evStations; i++) {
-      const lat = coords[i % coords.length][1];
-      const lng = coords[i % coords.length][0];
-      placements.push({ lat, lng  });
-    }
+    return 'red';
   }
-  // console.log({placements})
-  return placements;
 };
 
-export default function EvStation(evStations,setPinnedItems) {
+export default function EvStation({ hoveredStation,setHoveredStation ,defaultCenter,  setHoveredProbability, evStationPlacements,  selectedScopes, setCurrentDensity,evStations, pinnedItems , setPinnedItems,populationMap}) {
   const [hoverTimeout, setHoverTimeout] = useState(null);
   const mapRef = useRef(null);
-  const [hoveredStation, setHoveredStation] = useState(null);
-
+  // const [hoveredStation, setHoveredStation] = useState(null);
+  
   const [hoveredMarker, setHoveredMarker] = useState(null);
   const [customIcon, setCustomIcon] = useState(null);
-
-  evStations = evStations?.evStations?.data;
+  
+  evStations = evStations?.data;
   const [googleMapsLoaded, setGoogleMapsLoaded] = useState(false);
   const [markerIcon, setMarkerIcon] = useState(null);
-  const defaultCenter = { lat: 51.47, lng: 0.45 };
+  // const defaultCenter = { lat: 51.47, lng: 0.45 };
   const Mark = {
     url: Markk, // Path to your custom marker image
     scaledSize: { width: 56, height: 56 } // Adjust the size as needed
   };
-  const evStationPlacements = evStations?.flatMap(createEvStationPlacements).map((placement, index) => ({
-    ...placement,
-    ind:index
-  }));  // const customIcon = {
-  //   path: window.google.maps.SymbolPath.CIRCLE,
-  //   fillColor: 'red',
-  //   fillOpacity: 1,
-  //   scale: 5,
-  //   strokeColor: 'white',
-  //   strokeWeight: 1,
-  // };
-  console.log({evStationPlacements, evStations})
-  useEffect(() => {
-    if (window.google && mapRef.current) {
-      const icon = {
-        path: window.google.maps?.SymbolPath.CIRCLE,
-        fillColor: 'green',
-        fillOpacity: 1,
-        scale: 5,
-        strokeColor: 'white',
-        strokeWeight: 1,
-      };
-      setCustomIcon(icon);
-    }
-  }, [googleMapsLoaded]);
-
-  const handleMouseOver = (coord, station) => {
-    if (hoverTimeout) {
+  // const evStationPlacements = evStations?.flatMap(createEvStationPlacements).map((placement, index) => ({
+  //   ...placement,
+  //   ind:index
+  // }));
+  // setEvStationPlacements(evplace)
+  // const customIcon = {
+    //   path: window.google.maps.SymbolPath.CIRCLE,
+    //   fillColor: 'red',
+    //   fillOpacity: 1,
+    //   scale: 5,
+    //   strokeColor: 'white',
+    //   strokeWeight: 1,
+    // };
+    console.log({evStationPlacements})
+    useEffect(()=>{
+      console.log({hoveredStation})
+    },[hoveredStation]);
+    useEffect(() => {
+      if (window.google && mapRef.current) {
+        const icon = {
+          path: window.google.maps.SymbolPath.CIRCLE,
+          fillColor: 'green',
+          fillOpacity: 1,
+          scale: 5,
+          strokeColor: 'white',
+          strokeWeight: 1,
+        };
+        setCustomIcon(icon);
+      }
+    }, [googleMapsLoaded]);
+    
+    const handleMouseOver = (coord, station) => {
+      if (hoverTimeout) {
       clearTimeout(hoverTimeout);
       setHoverTimeout(null);
     }
     setHoveredMarker(coord);
+    setHoveredProbability(station.prob); // Set hovered probability
     setHoveredStation(station);
-    // console.log({hoveredStation})
+    console.log({hoveredStation})
     };
     
     const handleMouseOut = () => {
@@ -199,7 +241,8 @@ export default function EvStation(evStations,setPinnedItems) {
       setHoveredMarker(null);
     }, 1200); // Adjust the delay as needed
     setHoverTimeout(timeout);
-    
+    // setHoveredProbability(0); // Reset hovered probability
+
     };
 
   useEffect(() => {
@@ -227,11 +270,21 @@ export default function EvStation(evStations,setPinnedItems) {
     }
   };
 
+
+  
+  const getPopulationDensity = (lat, lng) => {
+    const key = `${lat},${lng}`;
+    const x = populationMap?.get(key) 
+    if(x) setCurrentDensity(x)
+    return x || 'No data';
+  };
+
   return (
     <APIProvider apiKey="AIzaSyBue3U52K8UDNxJxPJfCv0LiIc60-lo8p4">
         <Map
         defaultCenter={defaultCenter}
-        defaultZoom={11}
+        defaultZoom={19}
+        customIcon={customIcon}
         options={{ 
           styles: mapStyles,
           tilt: 85, // Tilt the map 45 degrees
@@ -240,28 +293,33 @@ export default function EvStation(evStations,setPinnedItems) {
         }}
         onLoad={(map) => (mapRef.current = map)}
         >
-
-        {googleMapsLoaded && (
-          <Marker
-            position={defaultCenter}
-            icon={Mark}
-          />
-        )}
-         {googleMapsLoaded && evStationPlacements?.map((station, index) => (
-          <Marker
-            key={index}
-            position={{lat : station.lat,lng : station.lng}}
-            icon={customIcon}
-            onMouseOver={() => handleMouseOver({lat : station.lat,lng : station.lng}, station)}
-            onMouseOut={handleMouseOut}
-            onClick={() => handleMarkerClick({lat : station.lat,lng : station.lng})}
-          />
-        ))}
+        {googleMapsLoaded && evStationPlacements?.map((station, index) => {
+          const probability = parseFloat(station.prob?.probability) || 0; // Default to 0 if probability is missing
+          // const color = probability > 0.5 ? 'green' : 'red'; // Change color based on probability
+          const customIcon = createCustomIcon(getScopeColor(probability*100));
+          console.log({probability})
+          return (
+            <Marker
+              key={index}
+              position={{ lat: station.lat, lng: station.lng }}
+              {...(customIcon && { icon: customIcon })} // Conditionally add the icon property
+              onMouseOver={() => handleMouseOver({ lat: station.lat, lng: station.lng }, station)}
+              onMouseOut={handleMouseOut}
+              onClick={() => handleMarkerClick({ lat: station.lat, lng: station.lng })}
+            />
+          );
+        })}
 
 {hoveredMarker && (
-          <InfoWindow position={hoveredMarker}>
-            <div>EV Station Info {hoveredStation?.ind}</div>
-            <div onClick={()=> setPinnedItems()}>add</div>
+  <InfoWindow
+  position={hoveredMarker}
+  options={{ disableAutoPan: true, closeBoxURL: '' }}
+>            
+<div>EV Station Info {hoveredStation?.ind}</div>
+            <div>EV Station Info {hoveredStation?.lat}</div>
+            <div>Population Density: {getPopulationDensity(hoveredStation?.lat, hoveredStation?.lng)}</div>
+            <div>Probability: {hoveredStation?.prob?.probability}</div> {/* Correctly display prob property */}
+            <button onClick={() => setPinnedItems([...pinnedItems, hoveredStation])}>add</button>
           </InfoWindow>
         )}
 
