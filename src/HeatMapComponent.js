@@ -124,7 +124,7 @@ const HeatMapComponent = ({populationMap}) => {
       setPopulationArray(array);
     }, [populationMap]);
   
-const GOOGLE_MAPS_API_KEY = 'AIzaSyCdlbJ4sld_viDfM-Qij71UOxtCWKGJv0c';
+const GOOGLE_MAPS_API_KEY = process.env.REACT_APP_GOOGLE_MAPS_API_KEY;
   const mapRef = useRef(null);
   const [heatmapType, setHeatmapType] = useState('populationDensity');
   const [googleMapsLoaded, setGoogleMapsLoaded] = useState(false);

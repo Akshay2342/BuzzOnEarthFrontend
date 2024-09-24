@@ -300,7 +300,7 @@ export default function EvStation({ hoveredStation,setHoveredStation ,defaultCen
   };
 
   return (
-    <APIProvider apiKey="AIzaSyBue3U52K8UDNxJxPJfCv0LiIc60-lo8p4">
+    <APIProvider apiKey={process.env.REACT_APP_GOOGLE_MAPS_API_KEY}>
         <Map
         defaultCenter={defaultCenter}
         defaultZoom={10}
