@@ -13,7 +13,7 @@ import ListItem from './ListItem';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 import Avatar from './avatarsvg.svg';
-
+import BAI from './BAI.png';
 
 const locations = [
   { position: [0.45, 51.47] },
@@ -191,7 +191,7 @@ function parseAndStoreInMap(data, endpoint) {
   });
 }
 useEffect(()=>{
-  setSelectedCity('Berlin')
+  setSelectedCity('Frankfurt')
 },[])
 
 const createEvStationPlacements = (data, inn) => {
@@ -543,8 +543,7 @@ useEffect(() => {
 
   return (
     <div className="flex flex-col h-screen">
-        <div className="absolute top-[75px] left-[580px]  transform -translate-x-1/2 m-0  p-0 rounded-md  z-50 w-[660px]">
-        <input
+<div className="absolute top-[75px] left-[750px] transform -translate-x-1/2 m-0 p-0 rounded-md z-50 w-[700px] shadow-lg">        <input
           type="text"
           className="p-2 border rounded-md w-full"
           placeholder="Enter City Name"
@@ -594,9 +593,12 @@ useEffect(() => {
       </nav>  */}
       
 
-      <nav style={{ backgroundColor: '#191b61' }} className="text-white p-4 h-[59px]" >
+      <nav style={{ backgroundColor: '#191b61' }} className="text-white pr-2 pl-0 pt-4 pb-4 h-[59px]" >
       <div className="container mx-auto flex justify-between items-center">
-        <div className="text-lg font-bold">EV Station App</div>
+        <div className='flex justify-center space-x-5'>
+        <img src={BAI} alt="Info" className="info-icon cursor-pointer ml-1" />
+        <div className="text-lg font-bold">EV STATION SCOPE ANALYTICS</div>
+        </div>
         <div className="relative">
           <button onClick={toggleAvatarDropdown} className="focus:outline-none">
             <img
@@ -755,7 +757,7 @@ useEffect(() => {
             value={exportName}
             onChange={handleExportNameChange}
             className="p-2 border rounded-md w-full text-black"
-            placeholder="Enter name"
+            placeholder="Enter file name"
           />
         </div>
         <div className="mt-4">
@@ -791,7 +793,7 @@ useEffect(() => {
           <div className="flex flex-1 h-full">
             {/* Map for EV Stations */}
             <div className="w-full h-full">
-              {/* <HeatMapComponent population={population} /> */}
+              {/* <HeatMapComponent populationMap={populationMap} selectedCity={selectedCity} /> */}
               {populationMap.size > 0 &&              <EvStation
               evStationPlacements={evStationPlacements}
               hoveredStation={hoveredStation}
@@ -840,7 +842,7 @@ useEffect(() => {
               <ul className="py-1">
                 {endpoints.map((place, index) => (
                   <li key={index} className="px-4 py-2 hover:bg-gray-100">
-                    {place}
+
                   </li>
                 ))}
             </ul>
@@ -858,7 +860,7 @@ useEffect(() => {
         {/* <span className={`inline-block transform transition-transform duration-300 ${isAccordionOpen1 ? 'rotate-180' : 'rotate-0'}`}>
   ▼
 </span> */}
-<span className={`inline-block ml-[175px] transform transition-transform duration-300 ${isAccordionOpen1 ? 'rotate-180' : 'rotate-0'}`}>
+<span className={`inline-block ml-[220px] transform transition-transform duration-300 ${isAccordionOpen1 ? 'rotate-180' : 'rotate-0'}`}>
   ▼
 </span>
 
@@ -930,7 +932,7 @@ useEffect(() => {
             {/* Additional details go here */}
 
             {isAccordionOpen1 && (
-                <div className="mt-2 p-2 w-[260px] bg-gray-200 rounded-md">
+                <div className="mt-2 p-2 w-[340px] bg-gray-200 rounded-md">
                   <h4 className="text-md font-medium">Comparison Result:</h4>
                   {typeof comparisonResult === 'string' ? (
                     <p>{comparisonResult}</p>
@@ -987,7 +989,7 @@ useEffect(() => {
             </div>
           </div>
              */}
-          <div className="bg-gray-200 p-2 rounded-md mb-2 overflow-y-auto" style={{ maxHeight: '200px' }}>
+          <div className="bg-gray-200 p-2 rounded-md mb-2 overflow-y-auto" style={{ maxHeight: '350px' }}>
             <h3 className="text-md font-medium">Stations</h3>
             <table className="w-full mt-2">
   <thead>

@@ -111,14 +111,49 @@ import { HeatmapLayer } from '@deck.gl/aggregation-layers';
 import { GoogleMapsOverlay } from '@deck.gl/google-maps';
 
 
-const HeatMapComponent = (population) => {
+const HeatMapComponent = ({populationMap}) => {
+  const [populationArray, setPopulationArray] = useState([]);
+    useEffect(() => {
+      const array = Array.from(populationMap.entries()).map(([key, value]) => {
+        const [latitude, longitude] = key.split(',').map(Number);
+        return {
+          weight: value,
+          coordinates: [longitude, latitude],
+        };
+      });
+      setPopulationArray(array);
+    }, [populationMap]);
+  
 const GOOGLE_MAPS_API_KEY = 'AIzaSyCdlbJ4sld_viDfM-Qij71UOxtCWKGJv0c';
   const mapRef = useRef(null);
   const [heatmapType, setHeatmapType] = useState('populationDensity');
   const [googleMapsLoaded, setGoogleMapsLoaded] = useState(false);
-
+  const data =[
+      {"ADDRESS":"939 ELLIS ST","RACKS":2,"SPACES":4,"COORDINATES":[-122.42177834,37.78346622]},
+      {"ADDRESS":"1380 HOWARD ST","RACKS":1,"SPACES":2,"COORDINATES":[-122.414411,37.774458]},
+      {"ADDRESS":"1195 OAK ST","RACKS":1,"SPACES":2,"COORDINATES":[-122.438887,37.772737]},
+      {"ADDRESS":"1387 VALENCIA ST","RACKS":1,"SPACES":2,"COORDINATES":[-122.42019976,37.75087429]},
+      {"ADDRESS":"180 TOWNSEND ST","RACKS":1,"SPACES":2,"COORDINATES":[-122.392606,37.779369]},
+      {"ADDRESS":"247 FILLMORE ST","RACKS":1,"SPACES":2,"COORDINATES":[-122.43065953,37.77185018]},
+      {"ADDRESS":"247 FILLMORE ST","RACKS":1,"SPACES":2,"COORDINATES":[-122.43065953,37.77185018]},
+      {"ADDRESS":"2690 MISSION ST","RACKS":2,"SPACES":4,"COORDINATES":[-122.418974,37.754029]},
+      {"ADDRESS":"400 MCALLISTER ST","RACKS":7,"SPACES":14,"COORDINATES":[-122.419014,37.780519]},
+      {"ADDRESS":"680 08TH ST","RACKS":1,"SPACES":2,"COORDINATES":[-122.404719,37.770128]},
+      {"ADDRESS":"101 TOWNSEND ST","RACKS":1,"SPACES":2,"COORDINATES":[-122.390466,37.780226]},
+      {"ADDRESS":"1186 FOLSOM ST","RACKS":1,"SPACES":2,"COORDINATES":[-122.409866,37.77547]},
+      {"ADDRESS":"1301 SANSOME ST","RACKS":1,"SPACES":2,"COORDINATES":[-122.403298,37.802327]},
+      {"ADDRESS":"1304 VALENCIA ST","RACKS":1,"SPACES":2,"COORDINATES":[-122.420935,37.751851]},
+      {"ADDRESS":"1380 VALENCIA ST","RACKS":1,"SPACES":2,"COORDINATES":[-122.420834,37.750802]},
+      {"ADDRESS":"1601 HOWARD ST","RACKS":2,"SPACES":4,"COORDINATES":[-122.416789,37.771394]},
+      {"ADDRESS":"1700 FILBERT ST","RACKS":1,"SPACES":2,"COORDINATES":[-122.427674,37.799281]},
+      {"ADDRESS":"1700 OCEAN AVE","RACKS":1,"SPACES":2,"COORDINATES":[-122.460192,37.724988]},
+      {"ADDRESS":"201 GUERRERO ST","RACKS":2,"SPACES":4,"COORDINATES":[-122.424167,37.767853]},
+      {"ADDRESS":"2500 16TH ST","RACKS":1,"SPACES":2,"COORDINATES":[-122.411968,37.76582]},
+      {"ADDRESS":"2525 16TH ST","RACKS":1,"SPACES":2,"COORDINATES":[-122.411897,37.765121]},
+  ];
+  console.log({populationArray})
   const heatmapData = {
-    populationDensity: 'https://raw.githubusercontent.com/visgl/deck.gl-data/master/website/sf-bike-parking.json',
+    populationDensity: populationArray,
     traffic: 'https://example.com/traffic-data.json',
     pollution: 'https://example.com/pollution-data.json',
   };
@@ -139,7 +174,7 @@ const GOOGLE_MAPS_API_KEY = 'AIzaSyCdlbJ4sld_viDfM-Qij71UOxtCWKGJv0c';
     } else {
       setGoogleMapsLoaded(true);
     }
-    console.log({population})
+    // console.log({population})
   }, []);
 
   // Initialize Google Maps and Deck.gl Overlay
@@ -156,10 +191,10 @@ const GOOGLE_MAPS_API_KEY = 'AIzaSyCdlbJ4sld_viDfM-Qij71UOxtCWKGJv0c';
         layers: [
           new HeatmapLayer({
             id: 'HeatmapLayer',
-            data: heatmapData[heatmapType],
+            data: heatmapData['populationDensity'],
             aggregation: 'SUM',
-            getPosition: (d) => d.COORDINATES,
-            getWeight: (d) => d.SPACES,
+            getPosition: (d) => d.coordinates,
+            getWeight: (d) => d.weight,
             radiusPixels: 25,
           }),
         ],

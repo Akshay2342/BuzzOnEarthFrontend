@@ -248,7 +248,7 @@ export default function EvStation({ hoveredStation,setHoveredStation ,defaultCen
     const handleMouseOut = () => {
     const timeout = setTimeout(() => {
       setHoveredMarker(null);
-    }, 1200); // Adjust the delay as needed
+    }, 800); // Adjust the delay as needed
     setHoverTimeout(timeout);
     // setHoveredProbability(0); // Reset hovered probability
 
@@ -303,8 +303,9 @@ export default function EvStation({ hoveredStation,setHoveredStation ,defaultCen
     <APIProvider apiKey="AIzaSyBue3U52K8UDNxJxPJfCv0LiIc60-lo8p4">
         <Map
         defaultCenter={defaultCenter}
-        defaultZoom={8}
+        defaultZoom={10}
         customIcon={customIcon}
+        disableDefaultUI
         options={{ 
           styles: mapStyles,
           tilt: 85, // Tilt the map 45 degrees
