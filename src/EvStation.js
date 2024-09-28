@@ -248,7 +248,7 @@ export default function EvStation({ hoveredStation,setHoveredStation ,defaultCen
     const handleMouseOut = () => {
     const timeout = setTimeout(() => {
       setHoveredMarker(null);
-    }, 800); // Adjust the delay as needed
+    }, 2000); // Adjust the delay as needed
     setHoverTimeout(timeout);
     // setHoveredProbability(0); // Reset hovered probability
 

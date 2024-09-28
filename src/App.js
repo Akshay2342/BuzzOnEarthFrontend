@@ -12,7 +12,7 @@ import QuestionIcon from './question.png'; // Component for Question Icon
 import ListItem from './ListItem';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
-import Avatar from './avatarsvg.svg';
+import Avatar from './User_icon.svg';
 import BAI from './BAI.png';
 
 const locations = [
@@ -47,7 +47,7 @@ cityData.set("Berlin", { lat: 52.5200, lng: 13.4050 });
 const App = () => {
   const [isAccordionOpen, setIsAccordionOpen] = useState(false);
   const [populationMap, setPopulationMap] = useState(new Map());
-  const [currentDensity , setCurrentDensity] = useState(0);
+  const [currentDensity , setCurrentDensity] = useState(9.02);
   const [hoveredStation, setHoveredStation] = useState(null); 
   const [filterText, setFilterText] = useState('');
   const [pinnedItems, setPinnedItems] = useState([]);
@@ -191,7 +191,9 @@ function parseAndStoreInMap(data, endpoint) {
   });
 }
 useEffect(()=>{
-  setSelectedCity('Frankfurt')
+  setSelectedCity('Frankfurt');
+  setFilterText('Frankfurt');
+  setIsInputFocused(false);
 },[])
 
 const createEvStationPlacements = (data, inn) => {
@@ -273,7 +275,7 @@ const filteredCities = cities.filter(city =>
 const fetchData = async (city) => {
   for (const endpoint of endpoints) {
     try {
-      const response = await fetch(`https://buzzonearthbackend.onrender.com/${endpoint}/${city}`);
+      const response = await fetch(`http://127.0.0.1:8000/${endpoint}/${city}`);
       if (!response.ok) {
         throw new Error(`Failed to fetch data from ${endpoint}`);
       }
@@ -593,10 +595,10 @@ useEffect(() => {
       </nav>  */}
       
 
-      <nav style={{ backgroundColor: '#191b61' }} className="text-white pr-2 pl-0 pt-4 pb-4 h-[59px]" >
-      <div className="container mx-auto flex justify-between items-center">
+      <nav style={{ backgroundColor: '#191b61' }} className="text-white   pt-4 pb-4 h-[59px]" >
+      <div style={{ marginLeft: '15px', marginRight: '0px'}} className="container flex justify-between items-center">
         <div className='flex justify-center space-x-5'>
-        <img src={BAI} alt="Info" className="info-icon cursor-pointer ml-1" />
+        <img src={BAI} alt="Info" className="info-icon cursor-pointer " />
         <div className="text-lg font-bold">EV STATION SCOPE ANALYTICS</div>
         </div>
         <div className="relative">
@@ -697,8 +699,15 @@ useEffect(() => {
     <div className="mt-6 flex items-center space-x-2">
       <div className="relative group">
         <img src={QuestionIcon} alt="Info" className="info-icon cursor-pointer w-5 h-5" />
-        <div className="absolute top-full mb-2 hidden w-48 p-2 text-sm text-white bg-gray-800 rounded-md shadow-md group-hover:block">
-          How scope is calculated: [Your explanation here]
+        <div className="absolute top-full mb-2 hidden w-60 p-2 text-sm text-white bg-gray-800 rounded-md shadow-md group-hover:block">
+          How scope is calculated: <br /> <br /> <hr /> <br />The solution uses a combination of Reinforcement Learning (RL) and Machine Learning (ML) classification to optimize EV station placement in cities. <br /> <br />
+          
+          The key methodology involves: <br /> <br />
+          <ul className="list-disc pl-5">
+            <li>Dividing cities into grids for manageable analysis.</li>
+            <li>Applying a machine learning classifier to each grid to predict the suitability of EV stations.</li>
+            <li>Reinforcement Learning selects and refines the grid selection process until optimal placements are identified.</li>
+          </ul>
         </div>
       </div>
       <span className="text-sm">How scope is calculated</span>
@@ -810,18 +819,18 @@ useEffect(() => {
             />}
             </div>
             {/* Separator */}
-            <div className="w-0.5 bg-gray-300"></div>
-            <div className="w-2/5 h-full bg-gray-100 p-2 overflow-y-auto">
+            <div className="w-0.5 bg-gray-200 "></div>
+            <div className="w-2/5 h-full  p-2 overflow-y-auto">
               <div className="p-2">
                 <div className="bg-gray-200 p-2 rounded-md mb-2">
                   <h3 className="text-md font-medium">Locality Scope</h3>
                   <p className="text-4xl font-bold">{hoveredProbability !== null ? `${(hoveredProbability?.probability * 100).toFixed(2)} %` : `${(highestProbability * 100).toFixed(2)}`}</p> {/* Display hovered probability */}
                   </div>
-                <div className="bg-gray-200 p-2 rounded-md mb-2">
-          <h3 className="text-md font-medium">Specifics</h3>
+                <div className="bg-gray-200 p-2 rounded-md mb-2 ">
+          <h3 className="text-md font-medium ">Specifics</h3>
           <div className="mt-2 flex justify-between">
-            <p className="text-sm font-medium">Population Density:</p>
-            <p className="text-md font-bold">{currentDensity.toFixed(2)}</p>
+            <p className="text-sm font-medium ">POPULATION DENSITY:</p>
+            <p className="text-md font-bold text">{currentDensity.toFixed(2)}</p>
           </div>
           {/* <div className="mt-2 flex justify-between">
             <p className="text-sm font-medium">Traffic:</p>
@@ -829,7 +838,7 @@ useEffect(() => {
           </div> */}
           <div className="mt-2 flex justify-between"         onClick={handleMouseEnter1}
         >
-            <p className="text-sm font-medium">Places of Interest
+            <p className="text-sm font-medium ">PLACES OF INTEREST
             <span className={`inline-block ml-[10px] transform transition-transform duration-300 ${isDropdownVisible ? 'rotate-180' : 'rotate-0'}`}>
     ▼
   </span>
@@ -842,7 +851,7 @@ useEffect(() => {
               <ul className="py-1">
                 {endpoints.map((place, index) => (
                   <li key={index} className="px-4 py-2 hover:bg-gray-100">
-
+                    {place}
                   </li>
                 ))}
             </ul>
@@ -860,7 +869,7 @@ useEffect(() => {
         {/* <span className={`inline-block transform transition-transform duration-300 ${isAccordionOpen1 ? 'rotate-180' : 'rotate-0'}`}>
   ▼
 </span> */}
-<span className={`inline-block ml-[220px] transform transition-transform duration-300 ${isAccordionOpen1 ? 'rotate-180' : 'rotate-0'}`}>
+<span className={`inline-block ml-[250px] transform transition-transform duration-300 ${isAccordionOpen1 ? 'rotate-180' : 'rotate-0'}`}>
   ▼
 </span>
 

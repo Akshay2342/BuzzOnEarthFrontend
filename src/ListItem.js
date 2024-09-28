@@ -1,6 +1,9 @@
 import React from 'react';
-import copyIcon from './cpyy.png';
-import copiedIcon from './copied.png';
+import copyIcon from './CP.svg';
+import copiedIcon from './cp1.svg';
+
+
+
 import { useState } from 'react';
 
 const ListItem = ({ item, index }) => {

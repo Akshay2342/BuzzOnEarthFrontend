@@ -21,7 +21,7 @@ const fetchEVStations = async (city) => {
 
 const fetchData = async (entity, city) => {
   try {
-    const response = await axios.get(`https://buzzonearthbackend.onrender.com/${entity}/${city}`);
+    const response = await axios.get(`http://127.0.0.1:8000/${entity}/${city}`);
     return { data: response.data, error: null };
   } catch (error) {
     return {
@@ -33,7 +33,7 @@ const fetchData = async (entity, city) => {
 
 const fetchProbability = async (city) => {
   try {
-    const response = await fetch(`https://buzzonearthbackend.onrender.com/probability/${city}`);
+    const response = await fetch(`http://127.0.0.1:8000/probability/${city}`);
     if (!response.ok) {
       throw new Error('Network response was not ok');
     }
