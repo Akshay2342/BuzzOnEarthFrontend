@@ -275,7 +275,7 @@ const filteredCities = cities.filter(city =>
 const fetchData = async (city) => {
   for (const endpoint of endpoints) {
     try {
-      const response = await fetch(`http://127.0.0.1:8000/${endpoint}/${city}`);
+      const response = await fetch(`https://buzzonearthbackend.onrender.com/${endpoint}/${city}`);
       if (!response.ok) {
         throw new Error(`Failed to fetch data from ${endpoint}`);
       }
