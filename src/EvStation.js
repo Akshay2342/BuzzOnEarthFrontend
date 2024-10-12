@@ -55,19 +55,6 @@ const mapStyles = [
   }
 ];
 
-// const createCustomIcon = (color) => {
-//   const svgMarker = {
-//     path: 'M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z',
-//     fillColor: color,
-//     fillOpacity: 1,
-//     scale: 1,
-//     strokeColor: 'white',
-//     strokeWeight: 1,
-//   };
-//   // console.log(object)
-//   return svgMarker;
-// };
-
 
 const createCustomIcon = (color) => {
   const svgMarker = {
@@ -81,91 +68,6 @@ const createCustomIcon = (color) => {
   return svgMarker;
 };
 
-const coordinates = [
-    { lat: 51.47, lng: 0.45 },
-  { lat: 51.48, lng: 0.46 },
-  { lat: 51.49, lng: 0.47 },
-  // Add more coordinates as needed
-];
-
-// const createEvStationPlacements = (data) => {
-//   const coordinatesString = data?.geometry?.slice(10, -2);
-//   const coordsArray = coordinatesString.split(", ");
-
-//   const evStations = data.EV_stations;
-//   const placements = [];
-
-//   // Convert coordinates to number
-//   const coords = coordsArray.map(coord => coord.split(" ").map(Number));
-
-//   // Calculate the center of the polygon
-//   const centerLat = coords.reduce((sum, coord) => sum + coord[1], 0) / coords.length;
-//   const centerLng = coords.reduce((sum, coord) => sum + coord[0], 0) / coords.length;
-
-//   // Generate EV station placements
-//   if (evStations === 1) {
-//       placements.push({ lat: centerLat, lng: centerLng });
-//   } else {
-//       const spacing = 0.0001; // Adjust spacing to prevent overlap
-//       let count = 0;
-
-//       for (let i = 0; i < evStations; i++) {
-//           const latOffset = (i % Math.ceil(Math.sqrt(evStations))) * spacing;
-//           const lngOffset = Math.floor(i / Math.ceil(Math.sqrt(evStations))) * spacing;
-
-//           placements.push({
-//               lat: centerLat + latOffset,
-//               lng: centerLng + lngOffset
-//           });
-//       }
-//   }
-
-//   return placements;
-// };
-
-
-// const createEvStationPlacements = (data) => {
-//   if (!data || !data.geometry) {
-//     console.error("Invalid data or missing geometry property");
-//     return [];
-//   }
-
-//   const coordinatesString = data.geometry.slice(10, -2);
-//   if (!coordinatesString) {
-//     console.error("Invalid geometry format");
-//     return [];
-//   }
-
-//   const coordsArray = coordinatesString.split(", ");
-//   if (!coordsArray.length) {
-//     console.error("No coordinates found in geometry");
-//     return [];
-//   }
-
-//   const evStations = data.EV_stations;
-//   const placements = [];
-
-//   // Convert coordinates to number
-//   const coords = coordsArray.map(coord => coord.split(" ").map(Number));
-
-//   // Calculate the center of the polygon
-//   const centerLat = coords.reduce((sum, coord) => sum + coord[1], 0) / coords.length;
-//   const centerLng = coords.reduce((sum, coord) => sum + coord[0], 0) / coords.length;
-
-//   // Generate EV station placements
-//   if (evStations === 1) {
-//     placements.push({ lat: centerLat, lng: centerLng });
-//   } else {
-//     // Distribute EV stations evenly within the polygon
-//     for (let i = 0; i < evStations; i++) {
-//       const lat = coords[i % coords.length][1];
-//       const lng = coords[i % coords.length][0];
-//       placements.push({ lat, lng  });
-//     }
-//   }
-//   // console.log({placements})
-//   return placements;
-// };
 const getScopeColor = (scope) => {
   if (scope > 80) {
     return 'green';
@@ -178,11 +80,11 @@ const getScopeColor = (scope) => {
   }
 };
 
-export default function EvStation({ hoveredStation,setHoveredStation ,defaultCenter,  setHoveredProbability, evStationPlacements,  selectedScopes, setCurrentDensity,evStations, pinnedItems , setPinnedItems,populationMap}) {
+export default function EvStation({ hoveredStation,setHoveredStation ,defaultCenter,  setHoveredProbability, evStationPlacements,  selectedScopes, setCurrentDensity,evStations, pinnedItems , setPinnedItems,populationMap, selectedCity}) {
   const [hoverTimeout, setHoverTimeout] = useState(null);
   const mapRef = useRef(null);
   // const [hoveredStation, setHoveredStation] = useState(null);
-  
+  const [map, setMap] = useState(null);
   const [hoveredMarker, setHoveredMarker] = useState(null);
   const [customIcon, setCustomIcon] = useState(null);
   
@@ -273,17 +175,15 @@ export default function EvStation({ hoveredStation,setHoveredStation ,defaultCen
     };
     checkGoogleMaps();
   }, [googleMapsLoaded]);
+
   const handleMarkerClick = (coord) => {
-    if (mapRef.current) {
+      console.log(`Panning to coordinates:`, coord);
       mapRef.current.panTo(coord);
-    }
   };
   useEffect(() => {
-    if( mapRef.current && defaultCenter){
-      mapRef.current.panTo(defaultCenter)
-    }
-    console.log({defaultCenter})
-  }, [defaultCenter]);
+      console.log(`Panning to default center:`, defaultCenter);
+      mapRef?.current?.panTo(selectedCity);
+  }, [defaultCenter,selectedCity]);
   
   const getPopulationDensity = (lat, lng) => {
     const key = `${lat},${lng}`;
@@ -312,8 +212,9 @@ export default function EvStation({ hoveredStation,setHoveredStation ,defaultCen
           heading: 90, // Rotate the map 90 degrees
           mapTypeId: 'hybrid' // Set the map type to hybrid to enable 3D view
         }}
-        onLoad={(map) => (mapRef.current = map)}
-        >
+        onLoad={(map) => {
+          mapRef.current = map;
+        }}        >
         {googleMapsLoaded && evStationPlacements?.filter((station) => {
               const probability = parseFloat(station.prob?.probability) || 0;
               return isWithinScope(probability); // Filter stations based on selected scopes

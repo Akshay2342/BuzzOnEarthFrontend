@@ -1,6 +1,6 @@
 import React from 'react';
 import copyIcon from './CP.svg';
-import copiedIcon from './cp1.svg';
+import copiedIcon from './copying.png';
 
 
 

@@ -14,6 +14,7 @@ import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 import Avatar from './User_icon.svg';
 import BAI from './BAI.png';
+import PathMap from './PathMap';
 
 const locations = [
   { position: [0.45, 51.47] },
@@ -51,6 +52,7 @@ const App = () => {
   const [hoveredStation, setHoveredStation] = useState(null); 
   const [filterText, setFilterText] = useState('');
   const [pinnedItems, setPinnedItems] = useState([]);
+  const [mapType, setMapType] = useState('map1');
   const [selectedScopes, setSelectedScopes] = useState([
     {label: '> 80%', mini: 0.8, maxi: 1},
     {label: '60% - 80%', mini: 0.6, maxi: 0.8},
@@ -275,7 +277,7 @@ const filteredCities = cities.filter(city =>
 const fetchData = async (city) => {
   for (const endpoint of endpoints) {
     try {
-      const response = await fetch(`https://buzzonearthbackend.onrender.com/${endpoint}/${city}`);
+      const response = await fetch(`http://127.0.0.1:8000/${endpoint}/${city}`);
       if (!response.ok) {
         throw new Error(`Failed to fetch data from ${endpoint}`);
       }
@@ -294,7 +296,8 @@ const fetchData = async (city) => {
 
   useEffect(() => {
     if(selectedCity==='') return;
-
+    setPinnedItems([]);
+    console.log({selectedCity})
     const testEndpoints = async () => {
       const x = await fetchData(selectedCity);
       // console.log({globalMap})
@@ -499,7 +502,9 @@ const handleStationClick1 = (station) => {
   setCompareSearchText1(`station ${station.ind}`);
   setIsInputFocused1(false);
 };
-
+const handleHeatmapTypeChange = (event) => {
+  setMapType(event.target.value);
+};
 const handleStationClick2 = (station) => {
   setCompareSearchText2(`station ${station.ind}`);
   setIsInputFocused2(false);
@@ -525,7 +530,6 @@ const calculateResult = (lat, lng) => {
     if (endpoint !== 'population') {
       return sum + (data[endpoint] || 0); // Add values, default to 0 if not found
     }
-    console.log({sum})
     return sum;
   }, 0);
 
@@ -534,6 +538,28 @@ const calculateResult = (lat, lng) => {
   console.log({result})
   return result;
 };
+const getDataKeysAndValues = (lat, lng) => {
+  const key = `${lat},${lng}`;
+  const data = workMap[key];
+
+  if (!data) {
+    console.log({ key });
+    console.log({ globalMap });
+    console.log({ workMap });
+    console.log("No data found for the specified coordinates.");
+    return null; // No data for the given lat/lng
+  }
+
+  // Retrieve keys and values
+  const keysAndValues = Object.keys(data).reduce((result, key) => {
+    result[key] = data[key] || 0; // Default to 0 if not found
+    return result;
+  }, {});
+
+  console.log({ keysAndValues });
+  return keysAndValues;
+};
+
 
 const highestProbability = probability.length > 0
 ? Math.max(...probability.map(p => p.probability))
@@ -644,10 +670,16 @@ useEffect(() => {
             </div> */}
             <div className="mt-4">
     <label className="block mb-2">Map</label>
-    <select className="w-full p-2 bg-blue-900 text-white rounded">
+    <select
+      className="w-full p-2 bg-blue-900 text-white rounded"
+      value={mapType}
+      onChange={handleHeatmapTypeChange}
+    >
       <option value="map1">Ev Stations</option>
       {/* <option value="map2">Map 2</option> */}
-      <option value="map3" disabled>Population Density</option>    </select>
+      <option value="map2">Population Density</option>
+      <option value="map3">Road Network Density </option>
+    </select>
   </div>
   <div className="mt-4">
   {scopeOptions.map((item, index) => (
@@ -802,8 +834,8 @@ useEffect(() => {
           <div className="flex flex-1 h-full">
             {/* Map for EV Stations */}
             <div className="w-full h-full">
-              {/* <HeatMapComponent populationMap={populationMap} selectedCity={selectedCity} /> */}
-              {populationMap.size > 0 &&              <EvStation
+              { mapType==="map2" && populationMap.size > 0 && <HeatMapComponent populationMap={populationMap} selectedCity={selectedCity} evStationPlacements={evStationPlacements} />}
+              {mapType==="map1" && populationMap.size > 0 &&              <EvStation
               evStationPlacements={evStationPlacements}
               hoveredStation={hoveredStation}
               setHoveredStation={setHoveredStation}
@@ -813,11 +845,14 @@ useEffect(() => {
               pinnedItems={pinnedItems}
               locations={locations}
               setPinnedItems={setPinnedItems}
+              selectedCity={selectedCity}
               evStations={evStations}
               defaultCenter={defaultCenter}
               setHoveredProbability={setHoveredProbability} // Pass setHoveredProbability to EvStation
-            />}
+            />  }
+            {mapType==="map3" && populationMap.size > 0 && <PathMap selectedCity={selectedCity} />}
             </div>
+
             {/* Separator */}
             <div className="w-0.5 bg-gray-200 "></div>
             <div className="w-2/5 h-full  p-2 overflow-y-auto">
@@ -842,19 +877,26 @@ useEffect(() => {
             <span className={`inline-block ml-[10px] transform transition-transform duration-300 ${isDropdownVisible ? 'rotate-180' : 'rotate-0'}`}>
     ▼
   </span>
-
+            {/* { console.log({ "kv" :  getDataKeysAndValues(hoveredStation?.lat, hoveredStation?.lng)})} */}
             </p>
-            <p className="text-lg font-bold">{calculateResult(hoveredStation?.lat, hoveredStation?.lng)}</p>
+            <p className="text-lg font-bold">{ calculateResult(hoveredStation?.lat, hoveredStation?.lng)}</p>
           </div>
           {isDropdownVisible && (
             <div className="absolute left-200 mt-2 w-48 bg-white bg-opacity-90 border border-gray-300 rounded-md shadow-lg max-h-40 overflow-y-auto z-50">
-              <ul className="py-1">
-                {endpoints.map((place, index) => (
-                  <li key={index} className="px-4 py-2 hover:bg-gray-100">
-                    {place}
-                  </li>
-                ))}
-            </ul>
+<ul>
+      {(() => {
+        const data = getDataKeysAndValues(hoveredStation?.lat, hoveredStation?.lng);
+        if (!data) {
+          return <li className="px-4 py-2">No data available</li>;
+        }
+        const endpoints = Object.keys(data).filter(key => key !== 'population');
+        return endpoints.map((place, index) => (
+          <li key={index} className="px-4 py-2 hover:bg-gray-100">
+            {place}: {data[place]}
+          </li>
+        ));
+      })()}
+          </ul>
           </div>
         )}
 
